@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logística em Ação - Jogo de Transporte</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .game-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+        
+        .product-card {
+            background: linear-gradient(145deg, #ffffff, #f0f0f0);
+            border: 2px solid transparent;
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+        }
+        
+        .product-card.selected {
+            border-color: #4f46e5;
+            background: linear-gradient(145deg, #e0e7ff, #c7d2fe);
+        }
+        
+        .transport-option {
+            background: linear-gradient(145deg, #f8fafc, #e2e8f0);
+            border: 2px solid transparent;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .transport-option:hover {
+            background: linear-gradient(145deg, #e2e8f0, #cbd5e1);
+            transform: scale(1.02);
+        }
+        
+        .transport-option.selected {
+            border-color: #10b981;
+            background: linear-gradient(145deg, #d1fae5, #a7f3d0);
+        }
+        
+        .urgency-high {
+            background: linear-gradient(90deg, #ef4444, #dc2626);
+        }
+        
+        .urgency-very-high {
+            background: linear-gradient(90deg, #dc2626, #991b1b);
+        }
+        
+        .urgency-medium {
+            background: linear-gradient(90deg, #f59e0b, #d97706);
+        }
+        
+        .urgency-low {
+            background: linear-gradient(90deg, #10b981, #059669);
+        }
+        
+        .load-indicator {
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+            background: #e5e7eb;
+        }
+        
+        .load-bar {
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+        
+        .load-high {
+            background: linear-gradient(90deg, #ef4444, #dc2626);
+            width: 90%;
+        }
+        
+        .load-medium {
+            background: linear-gradient(90deg, #f59e0b, #d97706);
+            width: 60%;
+        }
+        
+        .load-low {
+            background: linear-gradient(90deg, #10b981, #059669);
+            width: 30%;
+        }
+        
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .score-display {
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            color: white;
+            padding: 15px;
+            border-radius: 15px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 1.2rem;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            color: white;
+            padding: 12px 30px;
+            border-radius: 25px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(79, 70, 229, 0.4);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            padding: 10px 25px;
+            border-radius: 20px;
+            border: none;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .modal {
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 500px;
+            margin: auto;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="min-h-screen p-4">
+        <div class="container mx-auto max-w-6xl">
+            <!-- Header -->
+            <div class="text-center mb-8">
+                <div class="hero-section mb-6">
+                    <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/d87bf99e-d6ed-4aa3-807a-d13c2d3750b1.png" alt="Logística em ação: caminhões, navios, aviões e trens transportando produtos em uma paisagem urbana moderna com containers e armazéns ao fundo" class="w-full rounded-lg shadow-lg">
+                </div>
+                <h1 class="text-4xl font-bold text-white mb-2">🚛 Logística em Ação</h1>
+                <p class="text-xl text-white opacity-90">Gerencie produtos e escolha os melhores modais de transporte!</p>
+            </div>
+
+            <!-- Game Container -->
+            <div class="game-container p-8">
+                <!-- Score and Level -->
+                <div class="flex justify-between items-center mb-6">
+                    <div class="score-display">
+                        Pontuação: <span id="score">0</span>
+                    </div>
+                    <div class="text-lg font-semibold text-gray-700">
+                        Nível: <span id="level">1</span>
+                    </div>
+                    <div class="text-lg font-semibold text-gray-700">
+                        Tempo: <span id="timer">60</span>s
+                    </div>
+                </div>
+
+                <!-- Game Instructions -->
+                <div class="bg-blue-50 p-4 rounded-lg mb-6">
+                    <h3 class="font-semibold text-blue-800 mb-2">Como Jogar:</h3>
+                    <p class="text-blue-700">1. Escolha um produto para transportar</p>
+                    <p class="text-blue-700">2. Selecione o modal de transporte mais adequado</p>
+                    <p class="text-blue-700">3. Considere a urgência e nível de carga para maximizar pontos</p>
+                </div>
+
+                <!-- Products Grid -->
+                <div class="mb-8">
+                    <h2 class="text-2xl font-bold mb-4 text-gray-800">Produtos Disponíveis</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4" id="products-grid">
+                        <!-- Products will be dynamically loaded here -->
+                    </div>
+                </div>
+
+                <!-- Transport Options -->
+                <div class="mb-8" id="transport-section" style="display: none;">
+                    <h2 class="text-2xl font-bold mb-4 text-gray-800">Opções de Transporte</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="transport-options">
+                        <!-- Transport options will be dynamically loaded here -->
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="text-center">
+                    <button id="confirm-btn" class="btn-primary mr-4" onclick="confirmChoice()" style="display: none;">
+                        Confirmar Entrega
+                    </button>
+                    <button id="reset-btn" class="btn-secondary" onclick="resetSelection()">
+                        Nova Seleção
+                    </button>
+                </div>
+
+                <!-- Game Stats -->
+                <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-green-50 p-4 rounded-lg text-center">
+                        <h4 class="font-semibold text-green-800">Entregas Bem-sucedidas</h4>
+                        <p class="text-2xl font-bold text-green-600" id="successful-deliveries">0</p>
+                    </div>
+                    <div class="bg-red-50 p-4 rounded-lg text-center">
+                        <h4 class="font-semibold text-red-800">Entregas Atrasadas</h4>
+                        <p class="text-2xl font-bold text-red-600" id="late-deliveries">0</p>
+                    </div>
+                    <div class="bg-blue-50 p-4 rounded-lg text-center">
+                        <h4 class="font-semibold text-blue-800">Eficiência</h4>
+                        <p class="text-2xl font-bold text-blue-600" id="efficiency">100%</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Result Modal -->
+    <div id="result-modal" class="modal fixed inset-0 flex items-center justify-center z-50" style="display: none;">
+        <div class="modal-content">
+            <h2 class="text-2xl font-bold mb-4" id="modal-title">Resultado da Entrega</h2>
+            <div id="modal-content">
+                <!-- Result content will be inserted here -->
+            </div>
+            <div class="text-center mt-6">
+                <button class="btn-primary" onclick="closeModal()">Continuar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game Data
+        const products = [
+            {
+                id: 1,
+                name: "Eletrônicos",
+                description: "Smartphones, laptops e dispositivos tecnológicos",
+                loadLevel: "Alto",
+                urgency: "Alta",
+                urgencyLevel: 4,
+                loadValue: 90,
+                basePoints: 100,
+                image: "https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/b8d10572-6d0f-44ca-9d27-9ca2098da2af.png",
+                imageAlt: "Modernos dispositivos eletrônicos incluindo smartphone, laptop e tablet organizados em uma mesa branca com iluminação suave",
+                transports: [
+                    { name: "Transporte Aéreo", cost: 150, time: 1, efficiency: 95 },
+                    { name: "Transporte Rodoviário", cost: 80, time: 3, efficiency: 85 }
+                ]
+            },
+            {
+                id: 2,
+                name: "Alimentos Perecíveis",
+                description: "Frutas, vegetais e laticínios frescos",
+                loadLevel: "Médio",
+                urgency: "Muito Alta",
+                urgencyLevel: 5,
+                loadValue: 60,
+                basePoints: 120,
+                image: "https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/8b75cd01-f7f6-42e7-95fb-a00ce47929cd.png",
+                imageAlt: "Variedade de frutas e vegetais frescos coloridos em uma cesta de vime com laticínios ao fundo",
+                transports: [
+                    { name: "Transporte Refrigerado", cost: 120, time: 2, efficiency: 98 },
+                    { name: "Transporte Rodoviário", cost: 70, time: 4, efficiency: 75 }
+                ]
+            },
+            {
+                id: 3,
+                name: "Roupas",
+                description: "Vestuário variado, de casual a formal",
+                loadLevel: "Médio",
+                urgency: "Média",
+                urgencyLevel: 3,
+                loadValue: 60,
+                basePoints: 80,
+                image: "https://placehold.co/300x200",
+                imageAlt: "Coleção diversificada de roupas penduradas em cabides incluindo camisetas, blazers e vestidos em cores variadas",
+                transports: [
+                    { name: "Transporte Marítimo", cost: 40, time: 7, efficiency: 70 },
+                    { name: "Transporte Rodoviário", cost: 60, time: 5, efficiency: 80 }
+                ]
+            },
+            {
+                id: 4,
+                name: "Móveis",
+                description: "Sofás, mesas, cadeiras e móveis diversos",
+                loadLevel: "Alto",
+                urgency: "Baixa",
+                urgencyLevel: 2,
+                loadValue: 90,
+                basePoints: 60,
+                image: "https://placehold.co/300x200",
+                imageAlt: "Sala moderna com sofá cinza, mesa de centro de madeira e cadeiras estilosas em um ambiente bem iluminado",
+                transports: [
+                    { name: "Transporte Rodoviário", cost: 100, time: 6, efficiency: 85 },
+                    { name: "Transporte Ferroviário", cost: 60, time: 8, efficiency: 90 }
+                ]
+            },
+            {
+                id: 5,
+                name: "Medicamentos",
+                description: "Produtos farmacêuticos e medicamentos essenciais",
+                loadLevel: "Baixo",
+                urgency: "Muito Alta",
+                urgencyLevel: 5,
+                loadValue: 30,
+                basePoints: 140,
+                image: "https://placehold.co/300x200",
+                imageAlt: "Medicamentos e produtos farmacêuticos organizados em prateleiras de farmácia com embalagens brancas e azuis",
+                transports: [
+                    { name: "Transporte Aéreo", cost: 180, time: 1, efficiency: 99 },
+                    { name: "Transporte Rodoviário", cost: 90, time: 3, efficiency: 88 }
+                ]
+            }
+        ];
+
+        // Game State
+        let gameState = {
+            score: 0,
+            level: 1,
+            selectedProduct: null,
+            selectedTransport: null,
+            successfulDeliveries: 0,
+            lateDeliveries: 0,
+            timeLeft: 60,
+            gameActive: true,
+            timer: null
+        };
+
+        // Initialize Game
+        function initGame() {
+            loadProducts();
+            startTimer();
+            updateDisplay();
+        }
+
+        // Load Products
+        function loadProducts() {
+            const grid = document.getElementById('products-grid');
+            grid.innerHTML = '';
+
+            products.forEach(product => {
+                const productCard = document.createElement('div');
+                productCard.className = 'product-card p-4';
+                productCard.onclick = () => selectProduct(product);
+
+                const urgencyClass = getUrgencyClass(product.urgencyLevel);
+                const loadClass = getLoadClass(product.loadLevel);
+
+                productCard.innerHTML = `
+                    <div class="mb-3">
+                        <img src="${product.image}" alt="${product.imageAlt}" class="w-full h-32 object-cover rounded-lg">
+                    </div>
+                    <h3 class="font-bold text-lg mb-2">${product.name}</h3>
+                    <p class="text-sm text-gray-600 mb-3">${product.description}</p>
+                    
+                    <div class="mb-2">
+                        <div class="flex justify-between text-sm mb-1">
+                            <span>Urgência:</span>
+                            <span class="font-semibold">${product.urgency}</span>
+                        </div>
+                        <div class="h-2 bg-gray-200 rounded">
+                            <div class="h-full ${urgencyClass} rounded" style="width: ${product.urgencyLevel * 20}%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="flex justify-between text-sm mb-1">
+                            <span>Carga:</span>
+                            <span class="font-semibold">${product.loadLevel}</span>
+                        </div>
+                        <div class="load-indicator">
+                            <div class="load-bar ${loadClass}"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center">
+                        <span class="text-lg font-bold text-blue-600">${product.basePoints} pts</span>
+                    </div>
+                `;
+
+                grid.appendChild(productCard);
+            });
+        }
+
+        // Select Product
+        function selectProduct(product) {
+            if (!gameState.gameActive) return;
+
+            // Remove previous selections
+            document.querySelectorAll('.product-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+
+            // Select current product
+            event.currentTarget.classList.add('selected');
+            gameState.selectedProduct = product;
+            gameState.selectedTransport = null;
+
+            // Show transport options
+            showTransportOptions(product);
+        }
+
+        // Show Transport Options
+        function showTransportOptions(product) {
+            const section = document.getElementById('transport-section');
+            const optionsContainer = document.getElementById('transport-options');
+            
+            section.style.display = 'block';
+            optionsContainer.innerHTML = '';
+
+            product.transports.forEach((transport, index) => {
+                const transportCard = document.createElement('div');
+                transportCard.className = 'transport-option';
+                transportCard.onclick = () => selectTransport(transport, transportCard);
+
+                const efficiency = calculateEfficiency(product, transport);
+                
+                transportCard.innerHTML = `
+                    <div class="flex justify-between items-center mb-2">
+                        <h4 class="font-bold text-lg">${transport.name}</h4>
+                        <span class="text-sm font-semibold ${efficiency >= 90 ? 'text-green-600' : efficiency >= 70 ? 'text-yellow-600' : 'text-red-600'}">
+                            ${efficiency}% eficiência
+                        </span>
+                    </div>
+                    
+                    <div class="grid grid-cols-3 gap-4 text-sm">
+                        <div>
+                            <span class="text-gray-600">Custo:</span>
+                            <p class="font-semibold">R$ ${transport.cost}</p>
+                        </div>
+                        <div>
+                            <span class="text-gray-600">Tempo:</span>
+                            <p class="font-semibold">${transport.time} dia(s)</p>
+                        </div>
+                        <div>
+                            <span class="text-gray-600">Confiabilidade:</span>
+                            <p class="font-semibold">${transport.efficiency}%</p>
+                        </div>
+                    </div>
+                `;
+
+                optionsContainer.appendChild(transportCard);
+            });
+        }
+
+        // Select Transport
+        function selectTransport(transport, cardElement) {
+            if (!gameState.gameActive) return;
+
+            // Remove previous transport selections
+            document.querySelectorAll('.transport-option').forEach(card => {
+                card.classList.remove('selected');
+            });
+
+            // Select current transport
+            cardElement.classList.add('selected');
+            gameState.selectedTransport = transport;
+
+            // Show confirm button
+            document.getElementById('confirm-btn').style.display = 'inline-block';
+        }
+
+        // Calculate Efficiency
+        function calculateEfficiency(product, transport) {
+            let efficiency = transport.efficiency;
+            
+            // Adjust based on urgency vs time
+            const urgencyTimeFactor = product.urgencyLevel / transport.time;
+            efficiency = Math.min(100, efficiency * urgencyTimeFactor * 0.3 + efficiency * 0.7);
+            
+            return Math.round(efficiency);
+        }
+
+        // Confirm Choice
+        function confirmChoice() {
+            if (!gameState.selectedProduct || !gameState.selectedTransport || !gameState.gameActive) return;
+
+            const product = gameState.selectedProduct;
+            const transport = gameState.selectedTransport;
+            
+            // Calculate points
+            const efficiency = calculateEfficiency(product, transport);
+            const timeBonus = Math.max(0, gameState.timeLeft / 60);
+            const points = Math.round(product.basePoints * (efficiency / 100) * (1 + timeBonus * 0.5));
+            
+            // Update game state
+            gameState.score += points;
+            
+            if (efficiency >= 80) {
+                gameState.successfulDeliveries++;
+            } else {
+                gameState.lateDeliveries++;
+            }
+
+            // Show result
+            showResult(product, transport, efficiency, points);
+            
+            // Check for level up
+            if (gameState.successfulDeliveries % 3 === 0 && gameState.successfulDeliveries > 0) {
+                gameState.level++;
+                gameState.timeLeft += 30; // Bonus time for level up
+            }
+
+            // Reset selections
+            resetSelection();
+            updateDisplay();
+        }
+
+        // Show Result
+        function showResult(product, transport, efficiency, points) {
+            const modal = document.getElementById('result-modal');
+            const title = document.getElementById('modal-title');
+            const content = document.getElementById('modal-content');
+
+            const isSuccess = efficiency >= 80;
+            
+            title.textContent = isSuccess ? 'Entrega Bem-sucedida!' : 'Entrega com Problemas';
+            title.className = `text-2xl font-bold mb-4 ${isSuccess ? 'text-green-600' : 'text-red-600'}`;
+
+            content.innerHTML = `
+                <div class="text-center mb-4">
+                    <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/eb89ac2d-fef4-449a-85e0-9e1c185f92f6.png" alt="${isSuccess ? 'Caminhão de entrega chegando no destino com sucesso, motorista sorrindo' : 'Caminhão de entrega atrasado em estrada congestionada com motorista preocupado'}" class="mx-auto rounded-lg mb-4">
+                </div>
+                
+                <div class="space-y-3">
+                    <p><strong>Produto:</strong> ${product.name}</p>
+                    <p><strong>Transporte:</strong> ${transport.name}</p>
+                    <p><strong>Eficiência:</strong> <span class="${efficiency >= 80 ? 'text-green-600' : 'text-red-600'} font-semibold">${efficiency}%</span></p>
+                    <p><strong>Pontos Ganhos:</strong> <span class="text-blue-600 font-bold">${points}</span></p>
+                    
+                    <div class="mt-4 p-3 rounded-lg ${isSuccess ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}">
+                        ${isSuccess 
+                            ? 'Excelente escolha! A entrega foi realizada com sucesso e dentro do prazo.' 
+                            : 'A entrega apresentou problemas. Considere escolher um transporte mais adequado na próxima vez.'}
+                    </div>
+                </div>
+            `;
+
+            modal.style.display = 'flex';
+        }
+
+        // Close Modal
+        function closeModal() {
+            document.getElementById('result-modal').style.display = 'none';
+        }
+
+        // Reset Selection
+        function resetSelection() {
+            gameState.selectedProduct = null;
+            gameState.selectedTransport = null;
+            
+            document.querySelectorAll('.product-card, .transport-option').forEach(card => {
+                card.classList.remove('selected');
+            });
+            
+            document.getElementById('transport-section').style.display = 'none';
+            document.getElementById('confirm-btn').style.display = 'none';
+        }
+
+        // Start Timer
+        function startTimer() {
+            gameState.timer = setInterval(() => {
+                gameState.timeLeft--;
+                updateDisplay();
+                
+                if (gameState.timeLeft <= 0) {
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        // End Game
+        function endGame() {
+            gameState.gameActive = false;
+            clearInterval(gameState.timer);
+            
+            const modal = document.getElementById('result-modal');
+            const title = document.getElementById('modal-title');
+            const content = document.getElementById('modal-content');
+            
+            title.textContent = 'Fim de Jogo!';
+            title.className = 'text-2xl font-bold mb-4 text-purple-600';
+            
+            const efficiency = Math.round((gameState.successfulDeliveries / (gameState.successfulDeliveries + gameState.lateDeliveries)) * 100) || 0;
+            
+            content.innerHTML = `
+                <div class="text-center mb-4">
+                    <img src="https://placehold.co/300x200" alt="Gráfico de estatísticas de logística mostrando performance de entregas com ícones de caminhões e aviões" class="mx-auto rounded-lg mb-4">
+                </div>
+                
+                <div class="space-y-3 text-center">
+                    <h3 class="text-xl font-semibold">Estatísticas Finais</h3>
+                    <p><strong>Pontuação Total:</strong> <span class="text-blue-600 text-xl font-bold">${gameState.score}</span></p>
+                    <p><strong>Nível Alcançado:</strong> ${gameState.level}</p>
+                    <p><strong>Entregas Bem-sucedidas:</strong> ${gameState.successfulDeliveries}</p>
+                    <p><strong>Entregas Atrasadas:</strong> ${gameState.lateDeliveries}</p>
+                    <p><strong>Eficiência Geral:</strong> <span class="${efficiency >= 70 ? 'text-green-600' : 'text-red-600'} font-semibold">${efficiency}%</span></p>
+                    
+                    <div class="mt-6">
+                        <button class="btn-primary" onclick="restartGame()">Jogar Novamente</button>
+                    </div>
+                </div>
+            `;
+            
+            modal.style.display = 'flex';
+        }
+
+        // Restart Game
+        function restartGame() {
+            gameState = {
+                score: 0,
+                level: 1,
+                selectedProduct: null,
+                selectedTransport: null,
+                successfulDeliveries: 0,
+                lateDeliveries: 0,
+                timeLeft: 60,
+                gameActive: true,
+                timer: null
+            };
+            
+            closeModal();
+            resetSelection();
+            updateDisplay();
+            startTimer();
+        }
+
+        // Update Display
+        function updateDisplay() {
+            document.getElementById('score').textContent = gameState.score;
+            document.getElementById('level').textContent = gameState.level;
+            document.getElementById('timer').textContent = gameState.timeLeft;
+            document.getElementById('successful-deliveries').textContent = gameState.successfulDeliveries;
+            document.getElementById('late-deliveries').textContent = gameState.lateDeliveries;
+            
+            const totalDeliveries = gameState.successfulDeliveries + gameState.lateDeliveries;
+            const efficiency = totalDeliveries > 0 ? Math.round((gameState.successfulDeliveries / totalDeliveries) * 100) : 100;
+            document.getElementById('efficiency').textContent = efficiency + '%';
+            
+            // Change timer color when time is running low
+            const timerElement = document.getElementById('timer');
+            if (gameState.timeLeft <= 10) {
+                timerElement.className = 'text-red-600 font-bold pulse-animation';
+            } else if (gameState.timeLeft <= 30) {
+                timerElement.className = 'text-yellow-600 font-bold';
+            } else {
+                timerElement.className = '';
+            }
+        }
+
+        // Utility Functions
+        function getUrgencyClass(level) {
+            switch(level) {
+                case 5: return 'urgency-very-high';
+                case 4: return 'urgency-high';
+                case 3: return 'urgency-medium';
+                default: return 'urgency-low';
+            }
+        }
+
+        function getLoadClass(level) {
+            switch(level) {
+                case 'Alto': return 'load-high';
+                case 'Médio': return 'load-medium';
+                default: return 'load-low';
+            }
+        }
+
+        // Initialize game when page loads
+        window.onload = initGame;
+    </script>
+</body>
+</html>
